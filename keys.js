@@ -1,0 +1,15 @@
+export default {
+    KeyA: 'c',
+    KeyW: 'cs',
+    KeyS: 'd',
+    KeyE: 'eb',
+    KeyD: 'e',
+    KeyF: 'f',
+    KeyT: 'fs',
+    KeyG: 'g',
+    KeyY: 'gs',
+    KeyH: 'a',
+    KeyU: 'bb',
+    KeyJ: 'b',
+    KeyK: 'c2',
+};
