@@ -2,6 +2,31 @@ import Freqs from './freqs.js';
 import Keys from './keys.js';
 import createPWMWave from './pwm';
 
+/*
+Basic synth modules:
+VCO:
+    UI props: wave type
+    cv in:
+        frequency
+        pulse width (both continuous)
+    audio out: wave, of type, at frequncy
+
+EG:
+    UI props: A/D/S/R
+    cv in: A/D/S/R (continuous), gate (binary)
+    cv out: envelope, according to https://nerdaudio.com/blogs/news/envelope-generator-eg
+
+VCA:
+    audio in
+    cv in: gain
+    audio out: amplified or attenuated signal
+
+
+Design ideas:
+- CV graph: have one global timeout running at high speed, updates all values in the CV chain
+- Audio graph: handled by web audio api itself
+
+*/
 class Synth {
     constructor() {
         if (!window.AudioContext) {
@@ -35,19 +60,8 @@ class Synth {
         this.optionControls();
     }
 
-    /**
-     * Called when a note starts playing
-     *
-     * @param {String} key
-     */
-    playNote(key = 'a') {
-        const ctx = new window.AudioContext();
+    buildToneGenerator(ctx) {
         const osc = ctx.createOscillator();
-        const attack = ctx.createGain();
-        const decay = ctx.createGain();
-        const release = ctx.createGain();
-        const freq = this.getFreq(key);
-
         /* configure oscillator */
         if (this.wave == 'pwm') {
             const customWave = createPWMWave(ctx, this.duty);
@@ -55,45 +69,47 @@ class Synth {
         } else {
             osc.type = this.wave;
         }
+        return osc;
+    }
 
-        osc.connect(attack);
-        osc.frequency.value = freq / 3;
-        console.log('starting freq for ' + key + ': ' + freq / 3, osc.frequency.value);
+    buildEG(ctx) {
+        const eg = new ADSR(ctx, this.attack, this.decay, this.sustain, this.release);
+        return eg;
+    }
 
-        /* configure attack */
-        attack.gain.setValueAtTime(0.00001, ctx.currentTime);
-        if (this.attack > this.threshold) {
-            attack.gain.exponentialRampToValueAtTime(
-                0.9,
-                ctx.currentTime + this.threshold + this.attack
-            );
-        } else {
-            attack.gain.exponentialRampToValueAtTime(
-                0.9,
-                ctx.currentTime + this.threshold
-            );
-        }
-        attack.connect(decay);
+    /**
+     * Called when a note starts playing
+     *
+     * @param {String} key
+     */
+    playNote(key = 'a') {
+        const ctx = new window.AudioContext();
+        const attack = ctx.createGain();
+        const decay = ctx.createGain();
+        const release = ctx.createGain();
+        const freq = this.getFreq(key);
 
-        /* configure decay */
-        decay.gain.setValueAtTime(1, ctx.currentTime + this.attack);
-        decay.gain.exponentialRampToValueAtTime(
-            this.sustain / 100,
-            ctx.currentTime + this.attack + this.decay
-        );
-        decay.connect(release);
+        const tg = this.buildToneGenerator(ctx);
+        // tg connects to attack, attack connects to decay, decay connects to release,
+        // release connects to ctx.destination
+        const eg = this.buildEG(ctx);
 
-        release.connect(ctx.destination);
+        tg.connect(eg.attack);
+        tg.frequency.value = freq / 3;
+        eg.release.connect(ctx.destination);
 
         let oscope = document.querySelector('oscope-control');
-        oscope.setupOScopeNodes(ctx, release);
+        oscope.setupOScopeNodes(ctx, eg.release);
 
-        osc.start(0);
+        tg.start(0);
+        eg.gateOn(ctx);
 
         this.nodes[key] = {
             ctx: ctx,
-            osc: osc,
-            release: release,
+            osc: tg,
+            eg: eg
+                //,
+                //release: release,
         };
     }
 
@@ -104,14 +120,7 @@ class Synth {
      */
     endNote(node) {
         const ctx = node.ctx;
-        const release = node.release;
-
-        /* configure release */
-        release.gain.setValueAtTime(0.9, ctx.currentTime);
-        release.gain.exponentialRampToValueAtTime(
-            0.00001,
-            ctx.currentTime + Math.max(this.release, this.threshold)
-        );
+        node.eg.gateOff(ctx);
 
         window.setTimeout(() => {
             ctx.close();
@@ -144,15 +153,13 @@ class Synth {
             this.release = parseInt(data.release) / 1000 + 0.1;
             this.pitch = parseInt(data.pitch) + 3;
             this.duty = parseFloat(data.duty);
-            console.log('applying options to running nodes');
+
             for (const k in this.nodes) {
                 let n = this.nodes[k];
-                console.log('updating ' + k);
                 if (!n.osc) {
                     continue;
                 }
                 const freq = this.getFreq(k);
-                console.log(n.osc.frequency.value, freq / 3);
                 n.osc.frequency.value = freq / 3;
                 if (this.wave == 'pwm') {
                     const customWave = createPWMWave(n.ctx, this.duty);
@@ -163,11 +170,58 @@ class Synth {
             }
         };
 
-        this.controls.addEventListener('change', () => {
+        this.controls.addEventListener('input', () => {
             applyOptions();
         });
 
         applyOptions();
+    }
+}
+
+class ADSR {
+    constructor(ctx, a, d, s, r) {
+        this.attackTime = a;
+        this.decayTime = d;
+        this.sustain = s;
+        this.releaseTime = r;
+
+        this.threshold = 0.001;
+
+        this.attack = ctx.createGain();
+        this.decay = ctx.createGain();
+        this.release = ctx.createGain();
+        this.attack.connect(this.decay);
+        this.decay.connect(this.release);
+    }
+
+    gateOn(ctx) {
+        this.attack.gain.setValueAtTime(0.00001, ctx.currentTime);
+        if (this.attackTime > this.threshold) {
+            this.attack.gain.exponentialRampToValueAtTime(
+                0.9,
+                ctx.currentTime + this.threshold + this.attackTime
+            );
+        } else {
+            this.attack.gain.exponentialRampToValueAtTime(
+                0.9,
+                ctx.currentTime + this.threshold
+            );
+        }
+
+        this.decay.gain.setValueAtTime(1, ctx.currentTime + this.attackTime);
+        this.decay.gain.exponentialRampToValueAtTime(
+            this.sustain / 100,
+            ctx.currentTime + this.attackTime + this.decayTime
+        );
+    }
+
+    gateOff(ctx) {
+        /* configure release */
+        this.release.gain.setValueAtTime(0.9, ctx.currentTime);
+        this.release.gain.exponentialRampToValueAtTime(
+            0.00001,
+            ctx.currentTime + Math.max(this.releaseTime, this.threshold)
+        );
     }
 }
 
