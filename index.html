@@ -61,7 +61,6 @@
     <header>
         <h1>Synth</h1>
     </header>
-    <canvas id="canvas" width="512" height="256"></canvas>
 
     <form class="controls">
         <div class="controls-box">
@@ -111,49 +110,30 @@
         <div class="controls-box">
             <div class="range">
                 <label for="duty">Pulse width</label>
-                <input name="duty" id="duty" type="range" data-control-name="duty" min="0" max="1" value="0" step="any" />
+                <input name="duty" id="duty" type="range" data-control-name="duty" min="0" max="1" value="0" step="0.1" />
             </div>
         </div>
 
 
     </form>
-    <section class="keyboard">
-        <button class="white" data-note="c" label="C">
-            <key>A</key>
-        </button>
-        <button class="black" data-note="cs" label="C sharp">
-            <key>W</key>
-        </button>
-        <button class="white" data-note="d" label="D"><key>S</key></button>
-        <button class="black" data-note="eb" label="E sharp">
-            <key>E</key>
-        </button>
-        <button class="white" data-note="e" label="E"><key>D</key></button>
-        <button class="white" data-note="f" label="F"><key>F</key></button>
-        <button class="black" data-note="fs" label="F sharp">
-            <key>T</key>
-        </button>
-        <button class="white" data-note="g" label="G"><key>G</key></button>
-        <button class="black" data-note="gs" label="G sharp">
-            <key>Y</key>
-        </button>
-        <button class="white" data-note="a" label="A"><key>H</key></button>
-        <button class="black" data-note="bb" label="A sharp">
-            <key>U</key>
-        </button>
-        <button class="white" data-note="b" label="B"><key>J</key></button>
-        <button class="white" data-note="c2" label="C2">
-            <key>K</key>
-        </button>
-    </section>
 
     <script type="module" src="synth.js"></script>
 
+    <script type="module" src="oscope-control.js"></script>
+    <oscope-control></oscope-control>
+
+    <script type="module" src="kbd-controller.js"></script>
+    <kbd-controller></kbd-controller>
+
+    <!--
     <script type="module" src="custom-periodic-wave-control.js"></script>
     <custom-periodic-wave-control></custom-periodic-wave-control>
+    -->
 
+    <!--
     <script type="module" src="synth-control.js"></script>
     <synth-control></synth-control>
+    -->
 
     <div id="github">
         <a href="https://github.com/banksean">

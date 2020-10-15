@@ -47,21 +47,26 @@ class KbdController extends LitElement {
         `;
     }
 
-    playNote(note) {
-        const evt = new CustomEvent('play-note', {
+    noteOn(note) {
+        const evt = new CustomEvent('note-on', {
             detail: {
                 note: note,
             }
         });
+        this.nodes[note] = {};
         this.dispatchEvent(evt);
     }
 
-    endNote(note) {
-        const evt = new CustomEvent('end-note', {
+    noteOff(note) {
+        if (!this.nodes[note]) {
+            return;
+        }
+        const evt = new CustomEvent('note-off', {
             detail: {
                 note: note,
             }
         });
+        delete this.nodes[note];
         this.dispatchEvent(evt);
     }
 
@@ -80,15 +85,13 @@ class KbdController extends LitElement {
                 return;
             }
 
-            // TODO: Fire custom event instead.
-            this.playNote(this.keys[e.code]);
+            this.noteOn(this.keys[e.code]);
         });
 
         document.addEventListener('keyup', (e) => {
-            //if (!this.keys[e.code] || !this.nodes[this.keys[e.code]]) return;
+            if (!this.keys[e.code] || !this.nodes[this.keys[e.code]]) return;
 
-            // TODO: Fire custom event instead.
-            this.endNote(this.keys[e.code]);
+            this.noteOff(this.keys[e.code]);
         });
     }
 
@@ -99,7 +102,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.playNote(key);
+                this.noteOn(key);
                 e.preventDefault();
             });
 
@@ -109,7 +112,7 @@ class KbdController extends LitElement {
                     const key = btn.dataset.note;
                     if (!key || !this.freqs[key]) return;
 
-                    this.playNote(key);
+                    this.noteOn(key);
                     e.preventDefault();
                 },
                 false
@@ -120,7 +123,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!e.buttons || !key || !this.freqs[key]) return;
 
-                this.playNote(key);
+                this.noteOn(key);
                 e.preventDefault();
             });
 
@@ -128,7 +131,7 @@ class KbdController extends LitElement {
             btn.addEventListener('keydown', (e) => {
                 if (!(e.code === 'Space' || e.key === 'Enter')) return;
 
-                this.playNote(e.target.dataset.note);
+                this.noteOn(e.target.dataset.note);
             });
 
             /* release button */
@@ -136,7 +139,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
 
@@ -144,7 +147,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
 
@@ -152,7 +155,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
 
@@ -160,7 +163,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
 
@@ -169,7 +172,7 @@ class KbdController extends LitElement {
                 if (!(e.code === 'Space' || e.key === 'Enter')) return;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
 
@@ -177,7 +180,7 @@ class KbdController extends LitElement {
                 const key = btn.dataset.note;
                 if (!key || !this.freqs[key]) return;
 
-                this.endNote(key);
+                this.noteOff(key);
                 e.preventDefault();
             });
         });

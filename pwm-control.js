@@ -26,7 +26,7 @@ class PWMControl extends LitElement {
         return html `
         <div class="vco">
             PWM
-            <param-slider name="Pulse Width" value="${this.duty}" increment="0.001"></param-slider>
+            <param-slider name="Pulse Width" value="${this.duty}" increment="0.1"></param-slider>
         </div>`;
     }
 }

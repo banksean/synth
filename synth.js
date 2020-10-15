@@ -24,61 +24,16 @@ class Synth {
         this.controls = document.querySelector('.controls');
         this.headerDiagram = document.querySelector('#header-vis');
 
-        this.keyboardControls();
-        this.buttonControls();
-        this.optionControls();
-        this.setupOScopeCanvas();
-    }
-
-    /// BEGIN OSCOPE
-    setupOScopeCanvas() {
-        this.canvasCtx = document.querySelector('#canvas').getContext('2d');
-        this.canvasWidth = 512;
-        this.canvasHeight = 256;
-    }
-
-    setupOScopeNodes(audioContext, sourceNode) {
-        this.analyserNode = audioContext.createAnalyser();
-        this.javascriptNode = audioContext.createScriptProcessor(this.sampleSize, 1, 1);
-        // Create the array for the data values
-        this.amplitudeArray = new Uint8Array(this.analyserNode.frequencyBinCount);
-
-        // Now connect the nodes together
-
-        sourceNode.connect(this.analyserNode);
-        this.analyserNode.connect(this.javascriptNode);
-
-        this.javascriptNode.addEventListener('audioprocess', () => {
-            this.processAudio();
+        this.kbd = document.querySelector('kbd-controller');
+        this.kbd.addEventListener('note-on', (evt) => {
+            this.playNote(evt.detail.note);
+        });
+        this.kbd.addEventListener('note-off', (evt) => {
+            this.endNote(this.nodes[evt.detail.note]);
         });
 
-        this.javascriptNode.connect(audioContext.destination);
+        this.optionControls();
     }
-
-    processAudio(evt) {
-        // get the Time Domain data for this sample
-        this.analyserNode.getByteTimeDomainData(this.amplitudeArray);
-        // draw the display if the audio is playing
-        requestAnimationFrame(() => { this.drawTimeDomain() });
-    }
-
-    drawTimeDomain() {
-        this.clearCanvas();
-        for (let i = 0; i < this.amplitudeArray.length; i++) {
-            let value = this.amplitudeArray[i] / 256;
-            let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.fillStyle = '#ffffff';
-            this.canvasCtx.fillRect(i, y, 1, 1);
-        }
-    }
-
-    clearCanvas() {
-        this.canvasCtx.fillStyle = "rgba(0, 0, 0, 1)";
-        this.canvasCtx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
-        //this.canvasCtx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-    }
-
-    /// END OSCOPE 
 
     /**
      * Called when a note starts playing
@@ -102,7 +57,8 @@ class Synth {
         }
 
         osc.connect(attack);
-        osc.frequency.value = freq;
+        osc.frequency.value = freq / 3;
+        console.log('starting freq for ' + key + ': ' + freq / 3, osc.frequency.value);
 
         /* configure attack */
         attack.gain.setValueAtTime(0.00001, ctx.currentTime);
@@ -129,16 +85,10 @@ class Synth {
 
         release.connect(ctx.destination);
 
-        /// BEGIN OSCOPE
-        // TODO: should connect the oscope to the 'release' node.
-        this.setupOScopeNodes(ctx, release);
-        /// END OSCOPE
+        let oscope = document.querySelector('oscope-control');
+        oscope.setupOScopeNodes(ctx, release);
 
         osc.start(0);
-
-        Array.from(this.keyBtns)
-            .filter((btn) => btn.dataset.note === key)[0]
-            .classList.add('active');
 
         this.nodes[key] = {
             ctx: ctx,
@@ -153,7 +103,6 @@ class Synth {
      * @param {Object} node
      */
     endNote(node) {
-        console.log('endNote');
         const ctx = node.ctx;
         const release = node.release;
 
@@ -170,10 +119,6 @@ class Synth {
 
         Object.keys(this.nodes).forEach((key) => {
             if (this.nodes[key] === node) {
-                Array.from(this.keyBtns)
-                    .filter((btn) => btn.dataset.note === key)[0]
-                    .classList.remove('active');
-
                 delete this.nodes[key];
             }
         });
@@ -189,114 +134,6 @@ class Synth {
         return freq;
     }
 
-    keyboardControls() {
-        document.addEventListener('keydown', (e) => {
-            if (!this.keys[e.code] || // key doesn't have a note
-                this.nodes[this.keys[e.code]] // note is already playing
-            )
-                return;
-
-            this.playNote(this.keys[e.code]);
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (!this.keys[e.code] || !this.nodes[this.keys[e.code]]) return;
-
-            this.endNote(this.nodes[this.keys[e.code]]);
-        });
-    }
-
-    buttonControls() {
-        this.keyBtns.forEach((btn) => {
-            /*  click button */
-            btn.addEventListener('mousedown', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key]) return;
-
-                this.playNote(key);
-                e.preventDefault();
-            });
-
-            btn.addEventListener(
-                'touchstart',
-                (e) => {
-                    const key = btn.dataset.note;
-                    if (!key || !this.freqs[key]) return;
-
-                    this.playNote(key);
-                    e.preventDefault();
-                },
-                false
-            );
-
-            /* change button while clicked */
-            btn.addEventListener('mouseenter', (e) => {
-                const key = btn.dataset.note;
-                if (!e.buttons || !key || !this.freqs[key]) return;
-
-                this.playNote(key);
-                e.preventDefault();
-            });
-
-            /* trigger button with tab controls */
-            btn.addEventListener('keydown', (e) => {
-                if (!(e.code === 'Space' || e.key === 'Enter')) return;
-
-                this.playNote(e.target.dataset.note);
-            });
-
-            /* release button */
-            btn.addEventListener('mouseup', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-
-            btn.addEventListener('mouseout', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-
-            btn.addEventListener('touchend', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-
-            btn.addEventListener('touchcancel', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-
-            btn.addEventListener('keyup', (e) => {
-                const key = btn.dataset.note;
-                if (!(e.code === 'Space' || e.key === 'Enter')) return;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-
-            btn.addEventListener('blur', (e) => {
-                const key = btn.dataset.note;
-                if (!key || !this.freqs[key] || !this.nodes[key]) return;
-
-                this.endNote(this.nodes[key]);
-                e.preventDefault();
-            });
-        });
-    }
-
     optionControls() {
         const applyOptions = () => {
             const data = Object.fromEntries(new FormData(this.controls));
@@ -307,6 +144,23 @@ class Synth {
             this.release = parseInt(data.release) / 1000 + 0.1;
             this.pitch = parseInt(data.pitch) + 3;
             this.duty = parseFloat(data.duty);
+            console.log('applying options to running nodes');
+            for (const k in this.nodes) {
+                let n = this.nodes[k];
+                console.log('updating ' + k);
+                if (!n.osc) {
+                    continue;
+                }
+                const freq = this.getFreq(k);
+                console.log(n.osc.frequency.value, freq / 3);
+                n.osc.frequency.value = freq / 3;
+                if (this.wave == 'pwm') {
+                    const customWave = createPWMWave(n.ctx, this.duty);
+                    n.osc.setPeriodicWave(customWave);
+                } else {
+                    n.osc.type = this.wave;
+                }
+            }
         };
 
         this.controls.addEventListener('change', () => {
