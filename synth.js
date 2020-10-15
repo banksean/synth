@@ -84,20 +84,17 @@ class Synth {
      */
     playNote(key = 'a') {
         const ctx = new window.AudioContext();
-        const attack = ctx.createGain();
-        const decay = ctx.createGain();
-        const release = ctx.createGain();
         const freq = this.getFreq(key);
 
         const tg = this.buildToneGenerator(ctx);
-        // tg connects to attack, attack connects to decay, decay connects to release,
-        // release connects to ctx.destination
-        const eg = this.buildEG(ctx);
-
-        tg.connect(eg.attack);
         tg.frequency.value = freq / 3;
+
+        const eg = this.buildEG(ctx);
+        tg.connect(eg.attack);
+
         eg.release.connect(ctx.destination);
 
+        // Crazy idea: dynamically add/remove oscopes for each note being played.
         let oscope = document.querySelector('oscope-control');
         oscope.setupOScopeNodes(ctx, eg.release);
 
@@ -106,10 +103,8 @@ class Synth {
 
         this.nodes[key] = {
             ctx: ctx,
-            osc: tg,
+            tg: tg,
             eg: eg
-                //,
-                //release: release,
         };
     }
 
@@ -156,16 +151,16 @@ class Synth {
 
             for (const k in this.nodes) {
                 let n = this.nodes[k];
-                if (!n.osc) {
+                if (!n.tg) {
                     continue;
                 }
                 const freq = this.getFreq(k);
-                n.osc.frequency.value = freq / 3;
+                n.tg.frequency.value = freq / 3;
                 if (this.wave == 'pwm') {
                     const customWave = createPWMWave(n.ctx, this.duty);
-                    n.osc.setPeriodicWave(customWave);
+                    n.tg.setPeriodicWave(customWave);
                 } else {
-                    n.osc.type = this.wave;
+                    n.tg.type = this.wave;
                 }
             }
         };
@@ -194,6 +189,9 @@ class ADSR {
         this.decay.connect(this.release);
     }
 
+    // ADSR values are essentially locked-in once gateOn is called for ctx.
+    // That means e.g. you can't change the sustain value of a note that's
+    // already playing/
     gateOn(ctx) {
         this.attack.gain.setValueAtTime(0.00001, ctx.currentTime);
         if (this.attackTime > this.threshold) {
