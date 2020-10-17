@@ -15,6 +15,28 @@ class KbdController extends LitElement {
         this.nodes = {};
     }
 
+    static get styles() {
+        return css `
+        button {
+            border: none;
+            width: 32px;
+        }
+        .white {
+            height: 200px;
+            background: white;
+            color: black;
+        }
+        .black {
+            height: 100px;
+            background: black;
+            color: white;
+            vertical-align: top;
+            position: fixed;
+            margin: 0 0 0 -16px;
+        }
+        `;
+    }
+
     render() {
         return html `
         <button class="white" data-note="c" label="C">
