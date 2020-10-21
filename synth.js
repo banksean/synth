@@ -1,6 +1,7 @@
 import Freqs from './freqs.js';
 import Keys from './keys.js';
 import createPWMWave from './pwm';
+import ADSR from './adsr';
 
 /*
 Basic synth modules:
@@ -45,17 +46,18 @@ class Synth {
         this.pitch = 0;
         this.duty = 0.5;
         this.nodes = {};
-        this.keyBtns = document.querySelectorAll('.keyboard button');
         this.controls = document.querySelector('.controls');
         this.headerDiagram = document.querySelector('#header-vis');
 
-        this.kbd = document.querySelector('kbd-controller');
+        this.kbd = document.querySelector('kbd-control');
         this.kbd.addEventListener('note-on', (evt) => {
             this.playNote(evt.detail.note);
         });
         this.kbd.addEventListener('note-off', (evt) => {
             this.endNote(this.nodes[evt.detail.note]);
         });
+
+        this.eg = document.querySelector('eg-control');
 
         this.optionControls();
     }
@@ -89,22 +91,22 @@ class Synth {
         const tg = this.buildToneGenerator(ctx);
         tg.frequency.value = freq / 3;
 
-        const eg = this.buildEG(ctx);
-        tg.connect(eg.attack);
+        this.eg.setupAudioNodes(ctx, tg, ctx.destination);
 
-        eg.release.connect(ctx.destination);
+        //tg.connect(this.eg.adsr.attack);
+        //this.eg.adsr.release.connect(ctx.destination);
 
         // Crazy idea: dynamically add/remove oscopes for each note being played.
         let oscope = document.querySelector('oscope-control');
-        oscope.setupOScopeNodes(ctx, eg.release);
+        oscope.setupAudioNodes(ctx, this.eg.adsr.release);
 
         tg.start(0);
-        eg.gateOn(ctx);
+        this.eg.adsr.gateOn();
 
         this.nodes[key] = {
             ctx: ctx,
             tg: tg,
-            eg: eg
+            eg: this.eg
         };
     }
 
@@ -115,7 +117,7 @@ class Synth {
      */
     endNote(node) {
         const ctx = node.ctx;
-        node.eg.gateOff(ctx);
+        node.eg.adsr.gateOff();
 
         window.setTimeout(() => {
             ctx.close();
@@ -149,6 +151,7 @@ class Synth {
             this.pitch = parseInt(data.pitch) + 3;
             this.duty = parseFloat(data.duty);
 
+            // Update frequency of all running oscillator nodes.
             for (const k in this.nodes) {
                 let n = this.nodes[k];
                 if (!n.tg) {
@@ -170,56 +173,6 @@ class Synth {
         });
 
         applyOptions();
-    }
-}
-
-class ADSR {
-    constructor(ctx, a, d, s, r) {
-        this.attackTime = a;
-        this.decayTime = d;
-        this.sustain = s;
-        this.releaseTime = r;
-
-        this.threshold = 0.001;
-
-        this.attack = ctx.createGain();
-        this.decay = ctx.createGain();
-        this.release = ctx.createGain();
-        this.attack.connect(this.decay);
-        this.decay.connect(this.release);
-    }
-
-    // ADSR values are essentially locked-in once gateOn is called for ctx.
-    // That means e.g. you can't change the sustain value of a note that's
-    // already playing/
-    gateOn(ctx) {
-        this.attack.gain.setValueAtTime(0.00001, ctx.currentTime);
-        if (this.attackTime > this.threshold) {
-            this.attack.gain.exponentialRampToValueAtTime(
-                0.9,
-                ctx.currentTime + this.threshold + this.attackTime
-            );
-        } else {
-            this.attack.gain.exponentialRampToValueAtTime(
-                0.9,
-                ctx.currentTime + this.threshold
-            );
-        }
-
-        this.decay.gain.setValueAtTime(1, ctx.currentTime + this.attackTime);
-        this.decay.gain.exponentialRampToValueAtTime(
-            this.sustain / 100,
-            ctx.currentTime + this.attackTime + this.decayTime
-        );
-    }
-
-    gateOff(ctx) {
-        /* configure release */
-        this.release.gain.setValueAtTime(0.9, ctx.currentTime);
-        this.release.gain.exponentialRampToValueAtTime(
-            0.00001,
-            ctx.currentTime + Math.max(this.releaseTime, this.threshold)
-        );
     }
 }
 

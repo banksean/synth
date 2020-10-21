@@ -55,7 +55,7 @@ class OscilloscopeControl extends LitElement {
         this.holdOffMs = 1;
     }
 
-    setupOScopeNodes(audioContext, sourceNode) {
+    setupAudioNodes(audioContext, sourceNode) {
         this.analyserNode = audioContext.createAnalyser();
         this.frequencyArray = new Uint8Array(this.analyserNode.frequencyBinCount);
         this.amplitudeArray = new Uint8Array(this.analyserNode.frequencyBinCount);
