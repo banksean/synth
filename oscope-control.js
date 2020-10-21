@@ -12,6 +12,7 @@ import {
 class OscilloscopeControl extends LitElement {
     constructor() {
         super();
+        this.setupOScopeCanvas();
     }
 
     static get properties() {
@@ -44,11 +45,10 @@ class OscilloscopeControl extends LitElement {
     }
 
     firstUpdated(chnagedProperties) {
-        this.setupOScopeCanvas();
+        this.canvasCtx = this.shadowRoot.querySelector('#canvas').getContext('2d');
     }
 
     setupOScopeCanvas() {
-        this.canvasCtx = this.shadowRoot.querySelector('#canvas').getContext('2d');
         this.canvasWidth = 256;
         this.canvasHeight = 128;
         this.sweepTriggerThresh = 128;
@@ -57,30 +57,52 @@ class OscilloscopeControl extends LitElement {
 
     setupOScopeNodes(audioContext, sourceNode) {
         this.analyserNode = audioContext.createAnalyser();
-        this.javascriptNode = audioContext.createScriptProcessor(this.sampleSize, 1, 1);
+        this.frequencyArray = new Uint8Array(this.analyserNode.frequencyBinCount);
         this.amplitudeArray = new Uint8Array(this.analyserNode.frequencyBinCount);
         sourceNode.connect(this.analyserNode);
-        this.analyserNode.connect(this.javascriptNode);
+        this.analyserNode.connect(audioContext.destination);
 
-        this.javascriptNode.addEventListener('audioprocess', throttle(() => {
+        this.update = throttle(() => {
             this.processAudio();
-        }, this.holdOffMs));
+        }, this.holdOffMs);
 
-        this.javascriptNode.connect(audioContext.destination);
+        this.start();        
+    }
+
+    start() {
+        this.updateInterval = window.setInterval(()=>{this.update();}, this.holdOffMs); // Start the update loop.
+    }
+
+    stop() {
+        window.clearInterval(this.updateInterval);
     }
 
     processAudio(evt) {
-        // get the Time Domain data for this sample
-        this.analyserNode.getByteTimeDomainData(this.amplitudeArray);
-        // draw the display if the audio is playing
-        requestAnimationFrame(() => { this.drawTimeDomain() });
+        if (this.type == 'time') {
+            this.analyserNode.getByteTimeDomainData(this.amplitudeArray);
+            requestAnimationFrame(() => { this.drawTimeDomain() });
+        } else {
+            this.analyserNode.getByteFrequencyData(this.frequencyArray);
+            requestAnimationFrame(() => { this.drawFrequencyDomain() });
+        }
+    }
+
+    drawFrequencyDomain() {
+        this.clearCanvas();
+        for (let i = 0; i < this.frequencyArray.length; i++) {
+            let value = this.frequencyArray[i] / 256;
+            let x = i * this.canvasWidth / this.frequencyArray.length; //*(1.0*this.canvasWidth/this.canvasWidth);
+            let y = this.canvasHeight - (this.canvasHeight * value) - 1;
+            this.canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.canvasCtx.fillRect(x, y, 1, y);
+        }
     }
 
     drawTimeDomain() {
         this.clearCanvas();
         let sweepStart = -1;
         let previousValue = 0;
-        // Triggered sweepa
+        // Triggered sweep:
         // https://en.wikipedia.org/wiki/Oscilloscope#Triggered_sweep
         // Don't start drawing the amplitude values until we get to a one that
         // crosses the trigger threshold.  Hard-coded to be positive tigger polarity:
