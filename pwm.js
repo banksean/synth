@@ -12,7 +12,7 @@ export default function createPWMWave(ctx, duty) {
 // Based off the math in this doc:
 // http://liraeletronica.weebly.com/uploads/4/9/3/5/4935509/spectral_analysis_of_a_pwm_signal.pdf
 function createPWMCoefficients(duty) {
-    const N = 32; // Number of Fourier coefficients to generate.
+    const N = 256; // Number of Fourier coefficients to generate.
     var sin = new Float32Array(N);
     var cos = new Float32Array(N);
     // sin: a_n = (2/n) * (1/PI) * Sin(n * PI * duty)

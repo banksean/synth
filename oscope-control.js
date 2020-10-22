@@ -66,11 +66,11 @@ class OscilloscopeControl extends LitElement {
             this.processAudio();
         }, this.holdOffMs);
 
-        this.start();        
+        this.start();
     }
 
     start() {
-        this.updateInterval = window.setInterval(()=>{this.update();}, this.holdOffMs); // Start the update loop.
+        this.updateInterval = window.setInterval(() => { this.update(); }, this.holdOffMs); // Start the update loop.
     }
 
     stop() {
@@ -93,8 +93,8 @@ class OscilloscopeControl extends LitElement {
             let value = this.frequencyArray[i] / 256;
             let x = i * this.canvasWidth / this.frequencyArray.length; //*(1.0*this.canvasWidth/this.canvasWidth);
             let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            this.canvasCtx.fillRect(x, y, 1, y);
+            this.canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            this.canvasCtx.fillRect(x, y, 1, this.canvasHeight - y);
         }
     }
 
