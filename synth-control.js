@@ -4,7 +4,7 @@ import {
     css
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
-import './kbd-controller';
+import './kbd-control';
 import './pwm-control';
 
 class SynthControl extends LitElement {

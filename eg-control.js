@@ -65,13 +65,18 @@ class EGControl extends LitElement {
         this.decay = parseInt(data.decay) / 1000 + 0.001;
         this.sustain = parseInt(data.sustain) + 0.001;
         this.release = parseInt(data.release) / 1000 + 0.1;
+        if (this.adsr) { // Yuck.
+            this.adsr.attackTime = this.attack;
+            this.adsr.decayTime = this.decay;
+            this.adsr.sustain = this.sustain;
+            this.adsr.releaseTime = this.release;
+        }
+
     }
 
     setupAudioNodes(ctx, input, output) {
         this.applyOptions();
-        this.adsr = new ADSR(ctx, this.attack, this.decay, this.sustain, this.release);
-        input.connect(this.adsr.attack);
-        this.adsr.release.connect(output)
+        this.adsr = new ADSR(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
     }
 };
 

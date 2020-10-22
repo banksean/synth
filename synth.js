@@ -1,7 +1,6 @@
 import Freqs from './freqs.js';
 import Keys from './keys.js';
 import createPWMWave from './pwm';
-import ADSR from './adsr';
 
 /*
 Basic synth modules:
@@ -39,75 +38,69 @@ class Synth {
         this.keys = Keys;
         this.wave = 'sine';
         this.threshold = 0.001;
-        this.attack = 0;
-        this.decay = 0;
-        this.sustain = 50;
-        this.release = 0;
         this.pitch = 0;
         this.duty = 0.5;
-        this.nodes = {};
         this.controls = document.querySelector('.controls');
-        this.headerDiagram = document.querySelector('#header-vis');
 
         this.kbd = document.querySelector('kbd-control');
         this.kbd.addEventListener('note-on', (evt) => {
             this.playNote(evt.detail.note);
         });
         this.kbd.addEventListener('note-off', (evt) => {
-            this.endNote(this.nodes[evt.detail.note]);
+            this.endNote(this.voice);
         });
+
 
         this.eg = document.querySelector('eg-control');
 
+        this.buildAudioNodeGraph();
         this.optionControls();
     }
 
-    buildToneGenerator(ctx) {
-        const osc = ctx.createOscillator();
-        /* configure oscillator */
-        if (this.wave == 'pwm') {
-            const customWave = createPWMWave(ctx, this.duty);
-            osc.setPeriodicWave(customWave);
-        } else {
-            osc.type = this.wave;
-        }
-        return osc;
+    buildAudioNodeGraph() {
+        this.ctx = new window.AudioContext();
+
+        // Some day tg should grow up to be its own class like EG is.
+        this.tg = this.ctx.createOscillator();
+        this.tg.start(0);
+        this.eg.setupAudioNodes(this.ctx, this.tg, this.ctx.destination);
+
+        // Do something about 'voices' plural:
+        this.voice = {
+            ctx: this.ctx,
+            tg: this.tg,
+            eg: this.eg.adsr // :( clean this up.
+        };
+
+        // Crazy idea: dynamically add/remove oscopes for each note being played.
+        let oscope = document.querySelector('oscope-control');
+        oscope.setupAudioNodes(this.ctx, this.eg.adsr.release);
+
+        //this.voice.tg.start(0);
     }
 
-    buildEG(ctx) {
-        const eg = new ADSR(ctx, this.attack, this.decay, this.sustain, this.release);
-        return eg;
+    updateToneGenerator() { // should be an event handler on a tone-generator or VCO control
+        if (this.wave == 'pwm') {
+            const customWave = createPWMWave(this.ctx, this.duty);
+            this.voice.tg.setPeriodicWave(customWave);
+        } else {
+            this.voice.tg.type = this.wave;
+        }
     }
 
     /**
-     * Called when a note starts playing
+     * Assign a note to one of the voices: set it's TG's frequency, then
+     * send the EG the gate-on event. 
      *
      * @param {String} key
      */
     playNote(key = 'a') {
-        const ctx = new window.AudioContext();
+        console.log('playNote', key);
         const freq = this.getFreq(key);
-
-        const tg = this.buildToneGenerator(ctx);
-        tg.frequency.value = freq / 3;
-
-        this.eg.setupAudioNodes(ctx, tg, ctx.destination);
-
-        //tg.connect(this.eg.adsr.attack);
-        //this.eg.adsr.release.connect(ctx.destination);
-
-        // Crazy idea: dynamically add/remove oscopes for each note being played.
-        let oscope = document.querySelector('oscope-control');
-        oscope.setupAudioNodes(ctx, this.eg.adsr.release);
-
-        tg.start(0);
-        this.eg.adsr.gateOn();
-
-        this.nodes[key] = {
-            ctx: ctx,
-            tg: tg,
-            eg: this.eg
-        };
+        this.voice.tg.frequency.value = freq / 3;
+        this.voice.key = key;
+        this.updateToneGenerator(); // Should move to its own control and not be called here.
+        this.voice.eg.gateOn(this.voice.tg);
     }
 
     /**
@@ -115,19 +108,9 @@ class Synth {
      *
      * @param {Object} node
      */
-    endNote(node) {
-        const ctx = node.ctx;
-        node.eg.adsr.gateOff();
-
-        window.setTimeout(() => {
-            ctx.close();
-        }, 1000 * Math.max(this.release, this.threshold));
-
-        Object.keys(this.nodes).forEach((key) => {
-            if (this.nodes[key] === node) {
-                delete this.nodes[key];
-            }
-        });
+    endNote(voice) {
+        console.log('endNote', voice);
+        voice.eg.gateOff(voice.tg);
     }
 
     getFreq(key) {
@@ -144,27 +127,17 @@ class Synth {
         const applyOptions = () => {
             const data = Object.fromEntries(new FormData(this.controls));
             this.wave = data.waveform;
-            this.attack = parseInt(data.attack) / 1000 + 0.01;
-            this.decay = parseInt(data.decay) / 1000 + 0.001;
-            this.sustain = parseInt(data.sustain) + 0.001;
-            this.release = parseInt(data.release) / 1000 + 0.1;
             this.pitch = parseInt(data.pitch) + 3;
             this.duty = parseFloat(data.duty);
-
-            // Update frequency of all running oscillator nodes.
-            for (const k in this.nodes) {
-                let n = this.nodes[k];
-                if (!n.tg) {
-                    continue;
-                }
-                const freq = this.getFreq(k);
-                n.tg.frequency.value = freq / 3;
-                if (this.wave == 'pwm') {
-                    const customWave = createPWMWave(n.ctx, this.duty);
-                    n.tg.setPeriodicWave(customWave);
-                } else {
-                    n.tg.type = this.wave;
-                }
+            if (this.voice.key) {
+                const freq = this.getFreq(this.voice.key);
+                this.voice.tg.frequency.value = freq / 3;
+            }
+            if (this.wave == 'pwm') {
+                const customWave = createPWMWave(this.voice.ctx, this.duty);
+                this.voice.tg.setPeriodicWave(customWave);
+            } else {
+                this.voice.tg.type = this.wave;
             }
         };
 
@@ -176,8 +149,8 @@ class Synth {
     }
 }
 
-new Synth();
 
 window.onload = () => {
     'use strict';
+    new Synth();
 };
