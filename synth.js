@@ -62,7 +62,6 @@ class Synth {
 
         // Some day tg should grow up to be its own class like EG is.
         this.tg = this.ctx.createOscillator();
-        this.tg.start(0);
         this.eg.setupAudioNodes(this.ctx, this.tg, this.ctx.destination);
 
         // Do something about 'voices' plural:
@@ -95,6 +94,11 @@ class Synth {
      * @param {String} key
      */
     playNote(key = 'a') {
+        if (!this.started) {
+            this.started = true;
+            this.tg.start(0);
+        }
+
         console.log('playNote', key);
         const freq = this.getFreq(key);
         this.voice.tg.frequency.value = freq / 3;
