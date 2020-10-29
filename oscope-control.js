@@ -12,12 +12,14 @@ import {
 class OscilloscopeControl extends LitElement {
     constructor() {
         super();
+        this.type = "time";
         this.setupOScopeCanvas();
     }
 
     static get properties() {
         return {
-            sampleSize: { type: Number }
+            sampleSize: { type: Number },
+            type: { type: String }
         }
     }
 
@@ -51,7 +53,7 @@ class OscilloscopeControl extends LitElement {
     setupOScopeCanvas() {
         this.canvasWidth = 256;
         this.canvasHeight = 128;
-        this.sweepTriggerThresh = 128;
+        this.sweepTriggerThresh = 0;
         this.holdOffMs = 1;
     }
 
@@ -89,40 +91,48 @@ class OscilloscopeControl extends LitElement {
 
     drawFrequencyDomain() {
         this.clearCanvas();
+        this.canvasCtx.moveTo(0, this.canvasHeight - this.frequencyArray[0] / this.canvasHeight);
         for (let i = 0; i < this.frequencyArray.length; i++) {
-            let value = this.frequencyArray[i] / 256;
+            let value = this.frequencyArray[i] / this.canvasHeight;
             let x = i * this.canvasWidth / this.frequencyArray.length; //*(1.0*this.canvasWidth/this.canvasWidth);
             let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            this.canvasCtx.fillRect(x, y, 1, this.canvasHeight - y);
+            this.canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            this.canvasCtx.lineTo(x, this.canvasHeight - y);
         }
+        this.canvasCtx.stroke();
     }
 
     drawTimeDomain() {
         this.clearCanvas();
         let sweepStart = -1;
-        let previousValue = 0;
+        let previousValue = this.amplitudeArray[0] - 128;
         // Triggered sweep:
         // https://en.wikipedia.org/wiki/Oscilloscope#Triggered_sweep
         // Don't start drawing the amplitude values until we get to a one that
         // crosses the trigger threshold.  Hard-coded to be positive tigger polarity:
         // only triggering when amplitude crosses the threshold going *up* in value.
         // TODO: make trigger polarity a parameter.
+        this.canvasCtx.beginPath();
+        this.canvasCtx.moveTo(0, this.canvasHeight - (this.canvasHeight * this.amplitudeArray[0] / 256));
         for (let i = 0; i < this.amplitudeArray.length; i++) {
-            let delta = this.amplitudeArray[i] - previousValue;
-            previousValue = this.amplitudeArray[i];
-            if (sweepStart == -1 && this.amplitudeArray[i] == this.sweepTriggerThresh && delta > 0) {
+            let currentValue = (this.amplitudeArray[i] - 128);
+
+            // Start the sweep if the signal passed through the threshold value at any point between
+            // prevousValue and currentValue, inclusive.
+            if (sweepStart == -1 && (currentValue >= this.sweepTriggerThresh && previousValue < this.sweepTriggerThresh)) {
                 sweepStart = i;
             } else if (sweepStart == -1) {
+                previousValue = currentValue;
                 continue;
             }
             let value = this.amplitudeArray[i] / 256;
             let x = i - sweepStart;
             let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.fillStyle = '#ffffff';
+            this.canvasCtx.strokeStyle = '#ffffff';
             x = x * this.canvasWidth / this.amplitudeArray.length;
-            this.canvasCtx.fillRect(x, y, 1, 1);
+            this.canvasCtx.lineTo(x, y);
         }
+        this.canvasCtx.stroke();
     }
 
     // TODO: Add a 'disconnect' event handler so we can continue to clear
@@ -134,9 +144,10 @@ class OscilloscopeControl extends LitElement {
         // This makes copying and pasting the image less useful. Also,
         // fillRect allows us to create a sort of fading persistence to the
         // sweep so it doesn't disappear right awway.
-
+        this.canvasCtx.beginPath();
         this.canvasCtx.fillStyle = "rgba(0, 0, 0, 0.1)"; // 0.1 opacity gradually fades out over successive redraws.
-        this.canvasCtx.fillRect(0, 0, width, this.canvasHeight);
+        this.canvasCtx.rect(0, 0, width, this.canvasHeight);
+        this.canvasCtx.fill();
     }
 }
 
