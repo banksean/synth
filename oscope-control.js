@@ -113,9 +113,10 @@ class OscilloscopeControl extends LitElement {
         // only triggering when amplitude crosses the threshold going *up* in value.
         // TODO: make trigger polarity a parameter.
         this.canvasCtx.beginPath();
+        this.canvasCtx.strokeStyle = '#ffffff';
         this.canvasCtx.moveTo(0, this.canvasHeight - (this.canvasHeight * this.amplitudeArray[0] / 256));
         for (let i = 0; i < this.amplitudeArray.length; i++) {
-            let currentValue = (this.amplitudeArray[i] - 128);
+            const currentValue = this.amplitudeArray[i] - 128;
 
             // Start the sweep if the signal passed through the threshold value at any point between
             // prevousValue and currentValue, inclusive.
@@ -125,11 +126,9 @@ class OscilloscopeControl extends LitElement {
                 previousValue = currentValue;
                 continue;
             }
-            let value = this.amplitudeArray[i] / 256;
-            let x = i - sweepStart;
-            let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.strokeStyle = '#ffffff';
-            x = x * this.canvasWidth / this.amplitudeArray.length;
+            const value = this.amplitudeArray[i] / 256;
+            const x = (i - sweepStart) * this.canvasWidth / this.amplitudeArray.length;
+            const y = this.canvasHeight - (this.canvasHeight * value) - 1;
             this.canvasCtx.lineTo(x, y);
         }
         this.canvasCtx.stroke();
