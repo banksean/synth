@@ -72,10 +72,10 @@ class Synth {
         };
 
         // Crazy idea: dynamically add/remove oscopes for each note being played.
-        let oscope = document.querySelector('oscope-control');
-        oscope.setupAudioNodes(this.ctx, this.eg.adsr.release);
-
-        //this.voice.tg.start(0);
+        let oscopes = document.querySelectorAll('oscope-control');
+        for (let i = 0; i < oscopes.length; i++) {
+            oscopes[i].setupAudioNodes(this.ctx, this.eg.adsr.release);
+        }
     }
 
     updateToneGenerator() { // should be an event handler on a tone-generator or VCO control

@@ -13,13 +13,22 @@ class OscilloscopeControl extends LitElement {
     constructor() {
         super();
         this.type = "time";
-        this.setupOScopeCanvas();
+        this.canvasWidth = 256;
+        this.canvasHeight = 128;
+        this.sweepTriggerThresh = 0;
+        this.holdOffMs = 1;
+        this.fftSize = 2048;
     }
 
     static get properties() {
         return {
             sampleSize: { type: Number },
-            type: { type: String }
+            type: { type: String },
+            canvasWidth: { type: Number },
+            canvasHeight: { type: Number },
+            sweepTriggerThresh: { type: Number },
+            holdOffMs: { type: Number },
+            fftSize: { type: Number },
         }
     }
 
@@ -31,8 +40,6 @@ class OscilloscopeControl extends LitElement {
         }
 
         #container {
-            box-shadow: 0 0 15px 2px #fff;
-            border-radius: 100%;
             display: inline-block;
         }
         `;
@@ -41,7 +48,7 @@ class OscilloscopeControl extends LitElement {
     render() {
         return html `
         <div id="container">
-            <canvas id="canvas" width="256" height="128"></canvas>
+            <canvas id="canvas" width="${this.canvasWidth}" height="${this.canvasHeight}"></canvas>
         </div>
         `;
     }
@@ -50,15 +57,10 @@ class OscilloscopeControl extends LitElement {
         this.canvasCtx = this.shadowRoot.querySelector('#canvas').getContext('2d');
     }
 
-    setupOScopeCanvas() {
-        this.canvasWidth = 256;
-        this.canvasHeight = 128;
-        this.sweepTriggerThresh = 0;
-        this.holdOffMs = 1;
-    }
-
     setupAudioNodes(audioContext, sourceNode) {
         this.analyserNode = audioContext.createAnalyser();
+        this.analyserNode.fftSize = this.fftSize;
+        this.analyserNode.smoothingTimeConstant = 0.9;
         this.frequencyArray = new Uint8Array(this.analyserNode.frequencyBinCount);
         this.amplitudeArray = new Uint8Array(this.analyserNode.frequencyBinCount);
         sourceNode.connect(this.analyserNode);
@@ -81,9 +83,11 @@ class OscilloscopeControl extends LitElement {
 
     processAudio(evt) {
         if (this.type == 'time') {
+            this.amplitudeArray.fill(0);
             this.analyserNode.getByteTimeDomainData(this.amplitudeArray);
             requestAnimationFrame(() => { this.drawTimeDomain() });
         } else {
+            this.frequencyArray.fill(0);
             this.analyserNode.getByteFrequencyData(this.frequencyArray);
             requestAnimationFrame(() => { this.drawFrequencyDomain() });
         }
@@ -91,15 +95,15 @@ class OscilloscopeControl extends LitElement {
 
     drawFrequencyDomain() {
         this.clearCanvas();
-        this.canvasCtx.moveTo(0, this.canvasHeight - this.frequencyArray[0] / this.canvasHeight);
+        this.canvasCtx.beginPath();
+        this.canvasCtx.fillStyle = '#ffffff';
+        const barWidth = Math.max(this.canvasWidth / this.frequencyArray.length - 1, 1);
         for (let i = 0; i < this.frequencyArray.length; i++) {
-            let value = this.frequencyArray[i] / this.canvasHeight;
-            let x = i * this.canvasWidth / this.frequencyArray.length; //*(1.0*this.canvasWidth/this.canvasWidth);
-            let y = this.canvasHeight - (this.canvasHeight * value) - 1;
-            this.canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            this.canvasCtx.lineTo(x, this.canvasHeight - y);
+            let value = this.frequencyArray[i] / 256;
+            let x = i * this.canvasWidth / this.frequencyArray.length;
+            let y = this.canvasHeight - (this.canvasHeight * value);
+            this.canvasCtx.fillRect(x, y, barWidth, this.canvasHeight * value);
         }
-        this.canvasCtx.stroke();
     }
 
     drawTimeDomain() {
@@ -144,6 +148,7 @@ class OscilloscopeControl extends LitElement {
         // fillRect allows us to create a sort of fading persistence to the
         // sweep so it doesn't disappear right awway.
         this.canvasCtx.beginPath();
+        this.canvasCtx.strokeStyle = "#000000";
         this.canvasCtx.fillStyle = "rgba(0, 0, 0, 0.1)"; // 0.1 opacity gradually fades out over successive redraws.
         this.canvasCtx.rect(0, 0, width, this.canvasHeight);
         this.canvasCtx.fill();
