@@ -118,7 +118,6 @@ class OscilloscopeControl extends LitElement {
         // TODO: make trigger polarity a parameter.
         this.canvasCtx.beginPath();
         this.canvasCtx.strokeStyle = '#ffffff';
-        this.canvasCtx.moveTo(0, this.canvasHeight - (this.canvasHeight * this.amplitudeArray[0] / 256));
         for (let i = 0; i < this.amplitudeArray.length; i++) {
             const currentValue = this.amplitudeArray[i] - 128;
 
@@ -127,6 +126,8 @@ class OscilloscopeControl extends LitElement {
             if (sweepStart == -1 && (currentValue >= this.sweepTriggerThresh && previousValue < this.sweepTriggerThresh)) {
                 sweepStart = i;
             } else if (sweepStart == -1) {
+                // Keep moving the starting point until the sweep actually triggers.
+                this.canvasCtx.moveTo(0, this.canvasHeight - (this.canvasHeight * this.amplitudeArray[i] / 256));
                 previousValue = currentValue;
                 continue;
             }
@@ -147,11 +148,8 @@ class OscilloscopeControl extends LitElement {
         // This makes copying and pasting the image less useful. Also,
         // fillRect allows us to create a sort of fading persistence to the
         // sweep so it doesn't disappear right awway.
-        this.canvasCtx.beginPath();
-        this.canvasCtx.strokeStyle = "#000000";
         this.canvasCtx.fillStyle = "rgba(0, 0, 0, 0.1)"; // 0.1 opacity gradually fades out over successive redraws.
-        this.canvasCtx.rect(0, 0, width, this.canvasHeight);
-        this.canvasCtx.fill();
+        this.canvasCtx.fillRect(0, 0, width, this.canvasHeight);
     }
 }
 

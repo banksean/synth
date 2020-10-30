@@ -142,7 +142,7 @@ class Synth {
                 this.voice.tg.frequency.value = freq / 3;
             }
             if (this.wave == 'pwm') {
-                const customWave = createPWMWave(this.voice.ctx, this.duty);
+                const customWave = createPWMWave(this.voice.ctx, this.pwm.duty, this.pwm.fourierTerms);
                 this.voice.tg.setPeriodicWave(customWave);
             } else {
                 this.voice.tg.type = this.wave;

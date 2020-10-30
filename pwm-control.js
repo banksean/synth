@@ -10,7 +10,7 @@ class PWMControl extends LitElement {
     constructor() {
         super();
         this.duty = 0.5;
-        this.fourierTerms = 10;
+        this.fourierTerms = 32;
     }
 
     static get properties() {
