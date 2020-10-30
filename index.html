@@ -92,24 +92,21 @@
             </div>
         </div>
 
-        <div class="controls-box">
-            <div class="range">
-                <label for="duty">Pulse width</label>
-                <input name="duty" id="duty" type="range" data-control-name="duty" min="0" max="1" value="0.25" step="any" />
-            </div>
-        </div>
-
-
     </form>
 
     <script type="module" src="synth.js"></script>
+    <script type="module" src="pwm-control.js"></script>
+    <pwm-control></pwm-control>
 
     <script type="module" src="oscope-control.js"></script>
     <oscope-control canvaswidth="1024"></oscope-control>
-
     <oscope-control type="frequency" canvaswidth="1024" fftsize="512"></oscope-control>
+
     <script type="module" src="eg-control.js"></script>
     <eg-control></eg-control>
+
+    <script type="module" src="filter-control.js"></script>
+    <filter-control></filter-control>
 
     <script type="module" src="kbd-control.js"></script>
     <kbd-control></kbd-control>

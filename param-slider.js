@@ -12,8 +12,8 @@ class ParamSlider extends LitElement {
     static get properties() {
         return {
             name: { type: String },
-            value: { type: Number },
-            increment: { type: Number },
+            value: { type: Number, reflect: true },
+            step: { type: String },
             min: { type: Number },
             max: { type: Number }
         }
@@ -28,8 +28,16 @@ class ParamSlider extends LitElement {
         return html `
         <div class="range">
             <label for="slider">${this.name}</label>
-            <input name="slider" id="slider" type="range" data-control-name="slider" min="${this.min}" max="${this.max}" value="${this.value}" increment="${this.increment}" />
+            <input name="slider" id="slider" type="range" data-control-name="slider" min="${this.min}" max="${this.max}" value="${this.value}" step="${this.step}" 
+            @input=${this._handleInput}/>
+            <span>${this.value}</span>
         </div>`;
+    }
+
+    _handleInput(evt) {
+        // Databinding does not go *up*, so this should be communicated to parent elements via
+        // events.
+        this.value = evt.target.value;
     }
 }
 

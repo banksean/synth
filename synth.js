@@ -39,7 +39,6 @@ class Synth {
         this.wave = 'sine';
         this.threshold = 0.001;
         this.pitch = 0;
-        this.duty = 0.5;
         this.controls = document.querySelector('.controls');
 
         this.kbd = document.querySelector('kbd-control');
@@ -52,6 +51,11 @@ class Synth {
 
 
         this.eg = document.querySelector('eg-control');
+        this.pwm = document.querySelector('pwm-control');
+        this.pwm.addEventListener('input', (evt) => {
+            this.updateToneGenerator();
+            //console.log('synth should handle input event from pwm control', evt);
+        });
 
         this.buildAudioNodeGraph();
         this.optionControls();
@@ -80,7 +84,7 @@ class Synth {
 
     updateToneGenerator() { // should be an event handler on a tone-generator or VCO control
         if (this.wave == 'pwm') {
-            const customWave = createPWMWave(this.ctx, this.duty);
+            const customWave = createPWMWave(this.ctx, this.pwm.duty, this.pwm.fourierTerms);
             this.voice.tg.setPeriodicWave(customWave);
         } else {
             this.voice.tg.type = this.wave;
