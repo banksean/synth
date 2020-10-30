@@ -49,10 +49,10 @@ class Synth {
             this.endNote(this.voice);
         });
 
-
         this.eg = document.querySelector('eg-control');
-        this.pwm = document.querySelector('pwm-control');
-        this.pwm.addEventListener('input', (evt) => {
+        this.tg = document.querySelector('tg-control');
+
+        this.tg.addEventListener('input', (evt) => {
             this.updateToneGenerator();
             //console.log('synth should handle input event from pwm control', evt);
         });
@@ -65,13 +65,13 @@ class Synth {
         this.ctx = new window.AudioContext();
 
         // Some day tg should grow up to be its own class like EG is.
-        this.tg = this.ctx.createOscillator();
-        this.eg.setupAudioNodes(this.ctx, this.tg, this.ctx.destination);
-
+        //this.tg = this.ctx.createOscillator();
+        this.tg.setupAudioNodes(this.ctx);
+        this.eg.setupAudioNodes(this.ctx, this.tg.audioNode, this.ctx.destination);
         // Do something about 'voices' plural:
         this.voice = {
             ctx: this.ctx,
-            tg: this.tg,
+            tg: this.tg.audioNode,
             eg: this.eg.adsr // :( clean this up.
         };
 
@@ -83,12 +83,10 @@ class Synth {
     }
 
     updateToneGenerator() { // should be an event handler on a tone-generator or VCO control
-        if (this.wave == 'pwm') {
-            const customWave = createPWMWave(this.ctx, this.pwm.duty, this.pwm.fourierTerms);
-            this.voice.tg.setPeriodicWave(customWave);
-        } else {
-            this.voice.tg.type = this.wave;
-        }
+        console.log('udpateToneGenerator', this.voice.tg, this.tg.audioNode);
+        //this.voice.tg = this.tg.audioNode;
+        const freq = this.getFreq(this.voice.key);
+        this.voice.tg.frequency.value = freq;
     }
 
     /**
@@ -100,14 +98,14 @@ class Synth {
     playNote(key = 'a') {
         if (!this.started) {
             this.started = true;
-            this.tg.start(0);
+            this.tg.audioNode.start(0);
         }
 
         console.log('playNote', key);
         const freq = this.getFreq(key);
-        this.voice.tg.frequency.value = freq / 3;
+        this.voice.tg.frequency.value = freq;
         this.voice.key = key;
-        this.updateToneGenerator(); // Should move to its own control and not be called here.
+        //this.updateToneGenerator(); // Should move to its own control and not be called here.
         this.voice.eg.gateOn(this.voice.tg);
     }
 
@@ -124,7 +122,7 @@ class Synth {
     getFreq(key) {
         let freq = this.freqs[key] || 440;
 
-        for (let i = 0; i <= this.pitch; i++) {
+        for (let i = 0; i <= this.tg.pitch; i++) {
             freq = freq * 2;
         }
 
