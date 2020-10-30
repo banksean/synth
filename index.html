@@ -67,33 +67,6 @@
         <h1>Synth</h1>
     </header>
 
-    <form class="controls">
-        <div class="controls-box">
-            <input type="radio" id="waveform-sine" name="waveform" value="sine" checked />
-            <label for="waveform-sine">Sine</label>
-
-            <input type="radio" id="waveform-square" name="waveform" value="square" />
-            <label for="waveform-square">Square</label>
-
-            <input type="radio" id="waveform-triangle" name="waveform" value="triangle" />
-            <label for="waveform-triangle">Triangle</label>
-
-            <input type="radio" id="waveform-sawtooth" name="waveform" value="sawtooth" />
-            <label for="waveform-sawtooth">Sawtooth</label>
-
-            <input type="radio" id="waveform-pwm" name="waveform" value="pwm" />
-            <label for="waveform-pwm">Pulse</label>
-        </div>
-
-        <div class="controls-box">
-            <div class="range">
-                <label for="pitch">Pitch</label>
-                <input name="pitch" id="pitch" type="range" data-control-name="pitch" min="-4" max="5" value="0" />
-            </div>
-        </div>
-
-    </form>
-
     <script type="module" src="synth.js"></script>
     <script type="module" src="tg-control.js"></script>
     <tg-control type="pwm"></tg-control>
