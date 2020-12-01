@@ -4,9 +4,9 @@ import {
     css
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
-import ADSR from './adsr';
+import ADSRGain from './adsr';
 
-class EGControl extends LitElement {
+class GainEGControl extends LitElement {
     constructor() {
         super();
     }
@@ -17,6 +17,7 @@ class EGControl extends LitElement {
 
     static get properties() {
         return {
+            audioNode: { type: ADSRGain },
             attack: { type: Number },
             decay: { type: Number },
             sustain: { type: Number },
@@ -28,6 +29,7 @@ class EGControl extends LitElement {
         return html `
         <form class="controls">
         <div class="controls-box">
+            Gain Envelope
             <div class="range">
                 <label for="attack">Attack</label>
                 <input name="attack" id="attack" type="range" data-control-name="attack" min="0" max="1000" value="0" />
@@ -65,19 +67,19 @@ class EGControl extends LitElement {
         this.decay = parseInt(data.decay) / 1000 + 0.001;
         this.sustain = parseInt(data.sustain) + 0.001;
         this.release = parseInt(data.release) / 1000 + 0.1;
-        if (this.adsr) { // Yuck.
-            this.adsr.attackTime = this.attack;
-            this.adsr.decayTime = this.decay;
-            this.adsr.sustain = this.sustain;
-            this.adsr.releaseTime = this.release;
+        if (this.audioNode) { // Yuck.
+            this.audioNode.attackTime = this.attack;
+            this.audioNode.decayTime = this.decay;
+            this.audioNode.sustain = this.sustain;
+            this.audioNode.releaseTime = this.release;
         }
 
     }
 
     setupAudioNodes(ctx, input, output) {
         this.applyOptions();
-        this.adsr = new ADSR(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
+        this.audioNode = new ADSRGain(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
     }
 };
 
-customElements.define('eg-control', EGControl);
+customElements.define('gain-eg-control', GainEGControl);

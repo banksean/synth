@@ -74,13 +74,11 @@ class SkiffElement extends LitElement {
 
     // Iterates over the element's contents to find elements that
     // have AudioNodes.
-    // Lifecycle of AudioNodes vs lifecycle of Web Components.
+    // Lifecycle of AudioNodes vs lifecycle of Web Components?
 
     buildAudioNodeGraph() {
         this.ctx = new window.AudioContext();
     }
-
-
 }
 
 customElements.define('skiff-element', SkiffElement);

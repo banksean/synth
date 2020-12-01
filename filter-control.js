@@ -23,19 +23,19 @@ class FilterControl extends LitElement {
     _cutChanged(evt) {
         console.log('cut changed', evt.target, evt.target.value);
         this.cut = evt.target.value;
-        if (!this.biquadFilter) {
+        if (!this.audioNode) {
             return;
         }
-        this.biquadFilter.frequency.value = this.cut;
+        this.audioNode.frequency.value = this.cut;
     }
 
     _qChanged(evt) {
         console.log('q changed', evt.target, evt.target.value);
         this.q = evt.target.value;
-        if (!this.biquadFilter) {
+        if (!this.audioNode) {
             return;
         }
-        this.biquadFilter.Q.value = this.q;
+        this.audioNode.Q.value = this.q;
     }
 
     static get style() {
@@ -47,16 +47,16 @@ class FilterControl extends LitElement {
         return html `
         <div class="vcf">
         VCF
-            <param-slider @input=${this._cutChanged} value=${this.cut} name="Cut" min="1" max="20000"></param-slider>
-            <param-slider @input=${this._qChanged} value=${this.q} name="Q" min="0.0" max="1.0" step="any"></param-slider>
+            <param-slider @input=${this._cutChanged} value=${this.cut} name="Cut" min="1" max="10000" step="any"></param-slider>
+            <param-slider @input=${this._qChanged} value=${this.q} name="Q" min="0.0" max="100" step="any"></param-slider>
         </div>
         `;
     }
 
     setupAudioNodes(ctx, input, output) {
-        this.biquadFilter = ctx.createBiquadFilter();
-        input.connect(this.biquadFilter);
-        this.biquadFilter.connect(output);
+        this.audioNode = ctx.createBiquadFilter();
+        //input.connect(this.audioNode);
+        //this.audioNode.connect(output);
     }
 }
 

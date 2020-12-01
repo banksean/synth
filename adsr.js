@@ -1,8 +1,21 @@
 // ADSR has one output, one output and four a-rate AudioParam properties.
-export default class ADSR extends GainNode {
+// This is modeled as a GainNode, so it's assumed to be a combination of
+// an EG and a VCA, rather than just an EG.
+// TODO: Separate out these concepts, so that:
+//   ADSR has no input, just an output AudioParam.
+//   To get an EG+VCA, you'd need to set up a plain old GainNode as
+//     the destination, and call ADSRInstance.conenct(myGainNode.gain),
+//     which in turn calls this.decayNode.connect.
+
+// OR --------
+// Since we can't instantiate AudioParams directly, how about making
+// ADSR take a couple of factory methods:
+//   createEnvelopedNode();
+//   getEnvelopedParam()
+export default class ADSRGain extends GainNode {
     constructor(ctx, a, d, s, r, input, output) {
         super(ctx);
-        // Replace these Number values with AudioParams.
+        // TODO: Replace these Number values with AudioParams.
         this.attackTime = a;
         this.decayTime = d;
         this.sustain = s;
@@ -17,20 +30,26 @@ export default class ADSR extends GainNode {
         this.decayNode.connect(this.releaseNode);
 
         this.ctx = ctx;
+        // Input is e.g. an OscillatorNode.
+        // Output is e.g. the AudioContext.destination
         this.input = input;
         this.output = output;
     }
+
+    // TODO: Make connect and disconnect work, and call them from synth.js
 
     // connect the output of this node to be input into another node
     connect(destinationNode, outputIndex, inputIndex) {
         // ouputIndex refers to one of the outputs of this ADSR node.
         // inputIndex refers to one of the inputs on the destination node.
-        this.release.connect(destinationNode, inputIndex);
+        this.releaseNode.connect(destinationNode, inputIndex);
     }
 
     disconnect(destinationNode, outputIndex, inputIndex) {
-        this.release.disconnect(destinationNode, inputIndex);
+        this.releaseNode.disconnect(destinationNode, inputIndex);
     }
+
+    // TODO: Consider making Gate be an a-rate AudioParam?
 
     // ADSR values are essentially locked-in once gateOn is called.
     // That means e.g. you can't change the sustain value of a note that's
