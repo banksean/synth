@@ -4,6 +4,7 @@ import {
     css
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
+import styles from './styles';
 
 // TODO: Try using SVG instead of Canvas(!)
 //       Have one horizontal line segment for the strobe and
@@ -34,6 +35,7 @@ class OscilloscopeControl extends LitElement {
 
     static get styles() {
         return css `
+        ${styles.generic}
         #canvas {
             display: inline-block;
             background-color: black;
@@ -47,7 +49,7 @@ class OscilloscopeControl extends LitElement {
 
     render() {
         return html `
-        <div id="container">
+        <div id="container" class="container">
             <canvas id="canvas" width="${this.canvasWidth}" height="${this.canvasHeight}"></canvas>
         </div>
         `;

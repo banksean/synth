@@ -7,16 +7,18 @@ import {
 import './param-slider';
 import './pwm-control';
 import createPWMWave from './pwm';
+import styles from './styles';
 
-class TGControl extends LitElement {
+// Tone Generator. Will produce sin, square, saw, triangle, PWM etc.
+class OscillatorControl extends LitElement {
     constructor() {
         super();
         this.pitch = 0;
         this.type = 'square';
     }
 
-    static get style() {
-        return css ``;
+    static get styles() {
+        return styles.generic;
     }
 
     static get properties() {
@@ -28,8 +30,7 @@ class TGControl extends LitElement {
 
     render() {
         return html `
-        <div>
-        Tone Generator
+        <div class="container">
         
         <input @input=${this._typeChanged} type="radio" id="waveform-sine" name="waveform" value="sine" ?checked=${this.type === 'sine'}>
         <label for="waveform-sine">Sine</label>
@@ -96,4 +97,4 @@ class TGControl extends LitElement {
     }
 };
 
-customElements.define('tg-control', TGControl);
+customElements.define('oscillator-control', OscillatorControl);

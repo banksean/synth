@@ -5,12 +5,17 @@ import {
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
 import './param-slider';
+import styles from './styles';
 
 class FilterControl extends LitElement {
     constructor() {
         super();
         this.cut = 1000;
         this.q = 0.5;
+    }
+
+    static get styles() {
+        return styles.generic;
     }
 
     static get properties() {
@@ -45,7 +50,7 @@ class FilterControl extends LitElement {
 
     render() {
         return html `
-        <div class="vcf">
+        <div class="vcf container">
         VCF
             <param-slider @input=${this._cutChanged} value=${this.cut} name="Cut" min="1" max="10000" step="any"></param-slider>
             <param-slider @input=${this._qChanged} value=${this.q} name="Q" min="0.0" max="100" step="any"></param-slider>
@@ -53,10 +58,8 @@ class FilterControl extends LitElement {
         `;
     }
 
-    setupAudioNodes(ctx, input, output) {
+    setupAudioNodes(ctx) {
         this.audioNode = ctx.createBiquadFilter();
-        //input.connect(this.audioNode);
-        //this.audioNode.connect(output);
     }
 }
 

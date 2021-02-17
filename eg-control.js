@@ -5,14 +5,15 @@ import {
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
 import ADSRGain from './adsr';
+import styles from './styles';
 
 class GainEGControl extends LitElement {
     constructor() {
         super();
     }
 
-    static get style() {
-        return css ``;
+    static get styles() {
+        return styles.generic;
     }
 
     static get properties() {
@@ -28,7 +29,7 @@ class GainEGControl extends LitElement {
     render() {
         return html `
         <form class="controls">
-        <div class="controls-box">
+        <div class="controls-box container">
             Gain Envelope
             <div class="range">
                 <label for="attack">Attack</label>
@@ -79,6 +80,10 @@ class GainEGControl extends LitElement {
     setupAudioNodes(ctx, input, output) {
         this.applyOptions();
         this.audioNode = new ADSRGain(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
+        // In a gateOn event, ADSRGain will effectively call
+        // this.audioNode.input.connect(this.audioNode.attackNode);
+        // this.audioNode.releaseNode.connect(this.audioNode.output);
+
     }
 };
 

@@ -54,9 +54,11 @@
             text-align: center;
         }
         
-        oscope-control {
-            display: block;
-            margin: 1em;
+        .skiff {
+            display: flex;
+            flex-direction: row;
+            align-content: flex-start;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -71,21 +73,26 @@
     <script type="module" src="skiff.js"></script>
     <skiff-element>
     </skiff-element>
-    <script type="module" src="tg-control.js"></script>
-    <tg-control type="pwm"></tg-control>
 
     <script type="module" src="oscope-control.js"></script>
     <oscope-control canvaswidth="1024"></oscope-control>
     <oscope-control type="frequency" canvaswidth="1024" fftsize="512"></oscope-control>
 
-    <script type="module" src="eg-control.js"></script>
-    <gain-eg-control></gain-eg-control>
+    <div class="skiff">
 
-    <script type="module" src="filter-control.js"></script>
-    <filter-control></filter-control>
 
-    <script type="module" src="kbd-control.js"></script>
-    <kbd-control></kbd-control>
+        <script type="module" src="oscillator-control.js"></script>
+        <oscillator-control type="pwm" pitch="1"></oscillator-control>
+
+        <script type="module" src="eg-control.js"></script>
+        <gain-eg-control></gain-eg-control>
+
+        <script type="module" src="filter-control.js"></script>
+        <filter-control></filter-control>
+
+        <script type="module" src="kbd-control.js"></script>
+        <kbd-control></kbd-control>
+    </div>
 
     <!--
     <script type="module" src="custom-periodic-wave-control.js"></script>

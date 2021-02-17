@@ -6,6 +6,7 @@ import {
 
 import Freqs from './freqs.js';
 import Keys from './keys.js';
+import styles from './styles';
 
 class KbdControl extends LitElement {
     constructor() {
@@ -17,6 +18,7 @@ class KbdControl extends LitElement {
 
     static get styles() {
         return css `
+        ${styles.generic}
         button {
             border: none;
             width: 32px;
@@ -39,6 +41,7 @@ class KbdControl extends LitElement {
 
     render() {
         return html `
+        <div class="container">
         <button class="white" data-note="c" label="C">
             <key>A</key>
         </button>
@@ -66,6 +69,7 @@ class KbdControl extends LitElement {
         <button class="white" data-note="c2" label="C2">
             <key>K</key>
         </button>
+        </div>
         `;
     }
 

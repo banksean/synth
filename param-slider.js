@@ -30,7 +30,7 @@ class ParamSlider extends LitElement {
             <label for="slider">${this.name}</label>
             <input name="slider" id="slider" type="range" data-control-name="slider" min="${this.min}" max="${this.max}" value="${this.value}" step="${this.step}" 
             @input=${this._handleInput}/>
-            <span>${this.value}</span>
+            <!--span>${this.value}</span-->
         </div>`;
     }
 

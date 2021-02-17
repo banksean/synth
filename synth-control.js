@@ -6,10 +6,15 @@ import {
 
 import './kbd-control';
 import './pwm-control';
+import styles from './styles';
 
 class SynthControl extends LitElement {
     constructor() {
         super();
+    }
+
+    static get styles() {
+        return styles.generic;
     }
 
     playNote(evt) {
@@ -22,8 +27,10 @@ class SynthControl extends LitElement {
 
     render() {
         return html `
+        <div class="container">
         <pwm-control></pwm-control>
         <kbd-controller @play-note="${this.playNote}" @end-note="${this.endNote}"></kbd-controller>
+        </div>
         `;
     }
 }

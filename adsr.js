@@ -23,6 +23,7 @@ export default class ADSRGain extends GainNode {
 
         this.threshold = 0.001;
 
+        this.gainNode = ctx.createGain()
         this.attackNode = ctx.createGain();
         this.decayNode = ctx.createGain();
         this.releaseNode = ctx.createGain();
@@ -112,3 +113,28 @@ export default class ADSRGain extends GainNode {
 
     }
 }
+
+const THRESHOLD = 0.001;
+
+function startADSR(aRateValue, attackTime, decayTime, sustainRatio, currentTime) {
+    aRateValue.cancelScheduledValues();
+    aRateValue.setValueAtTime(0, currentTime);
+    aRateValue.exponentialRampToValueAtTime(1, currentTime + attackTime + THRESHOLD);
+    aRateValue.exponentialRampToValueAtTime(sustainRatio, currentTime + attackTime + decayTime + THRESHOLD);
+}
+
+function stopADSR(aRateValue, releaseTime, currentTime) {
+    aRateValue.cancelScheduledValues();
+    aRateValue.exponentialRampToValueAtTime(0, currentTime + releaseTime + THRESHOLD)
+}
+
+class ADSRBiquadFilter extends BiquadFilterNode {
+    constructor() {
+
+    }
+}
+
+// New idea:
+// Make ADSR with nothing but a reference to an a-rate AudioParam.
+// Rather than chaining multiple GainNodes together, just time
+// the updates to a single GainNode's gain AudioParam.

@@ -20,7 +20,7 @@ function createPWMCoefficients(duty, terms) {
     sin[0] = 0;
     cos[0] = 0;
     for (let i = 1; i < terms; i++) {
-        let n = i; + 1;
+        let n = i;
         sin[i] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * duty);
         cos[i] = 0;
     }

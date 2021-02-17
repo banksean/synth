@@ -21,7 +21,6 @@ VCA:
     cv in: gain
     audio out: amplified or attenuated signal
 
-
 Design ideas:
 - CV graph: have one global timeout running at high speed, updates all values in the CV chain
 - Audio graph: handled by web audio api itself
@@ -38,7 +37,15 @@ Synth class catches note-on, calls this.playNote
 
 Synth.voice tries to encapsulate all the stuff required to play a distinct note.
 The idea is/was that we could instantiate as many .voice objects as we want for
-polyphonyda
+polyphony.
+
+2021/02/09
+- Punt on polyphony.
+- Fix state management, use events-up-props-down for now.
+- Clarify responsibilities of web components wrt audio graph management.
+  - Do they just manage their own AudioNode's properties?
+    - One AudioNode per component?
+  - Do they need to know about the state of the overall graph?
 
 */
 class Synth {
@@ -53,7 +60,6 @@ class Synth {
         this.wave = 'sine';
         this.threshold = 0.001;
         this.pitch = 0;
-        this.controls = document.querySelector('.controls');
 
         this.kbd = document.querySelector('kbd-control');
         this.kbd.addEventListener('note-on', (evt) => {
@@ -64,7 +70,7 @@ class Synth {
         });
 
         this.gainEG = document.querySelector('gain-eg-control');
-        this.tg = document.querySelector('tg-control');
+        this.tg = document.querySelector('oscillator-control');
         this.filter = document.querySelector('filter-control');
 
         this.tg.addEventListener('input', (evt) => {
@@ -73,7 +79,6 @@ class Synth {
         });
 
         this.buildAudioNodeGraph();
-        this.optionControls();
     }
 
     buildAudioNodeGraph() {
@@ -82,7 +87,7 @@ class Synth {
         // Some day tg should grow up to be its own class like EG is.
         //this.tg = this.ctx.createOscillator();
         this.tg.setupAudioNodes(this.ctx);
-        this.filter.setupAudioNodes(this.ctx)
+        this.filter.setupAudioNodes(this.ctx);
         this.tg.audioNode.connect(this.filter.audioNode);
         //this.filter.audioNode.connect(this.gainEG.audioNode);
         this.gainEG.setupAudioNodes(this.ctx, this.filter.audioNode, this.ctx.destination);
@@ -146,31 +151,6 @@ class Synth {
         }
 
         return freq;
-    }
-
-    optionControls() {
-        const applyOptions = () => {
-            const data = Object.fromEntries(new FormData(this.controls));
-            this.wave = data.waveform;
-            this.pitch = parseInt(data.pitch) + 3;
-            this.duty = parseFloat(data.duty);
-            if (this.voice.key) {
-                const freq = this.getFreq(this.voice.key);
-                this.voice.tg.frequency.value = freq / 3;
-            }
-            if (this.wave == 'pwm') {
-                const customWave = createPWMWave(this.voice.ctx, this.pwm.duty, this.pwm.fourierTerms);
-                this.voice.tg.setPeriodicWave(customWave);
-            } else {
-                this.voice.tg.type = this.wave;
-            }
-        };
-
-        this.controls.addEventListener('input', () => {
-            applyOptions();
-        });
-
-        applyOptions();
     }
 }
 
