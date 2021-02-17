@@ -18,17 +18,10 @@ export default class ADSRGain extends GainNode {
         // TODO: Replace these Number values with AudioParams.
         this.attackTime = a;
         this.decayTime = d;
-        this.sustain = s;
+        this.sustainRatio = s;
         this.releaseTime = r;
 
         this.threshold = 0.001;
-
-        this.gainNode = ctx.createGain()
-        this.attackNode = ctx.createGain();
-        this.decayNode = ctx.createGain();
-        this.releaseNode = ctx.createGain();
-        this.attackNode.connect(this.decayNode);
-        this.decayNode.connect(this.releaseNode);
 
         this.ctx = ctx;
         // Input is e.g. an OscillatorNode.
@@ -37,104 +30,66 @@ export default class ADSRGain extends GainNode {
         this.output = output;
     }
 
-    // TODO: Make connect and disconnect work, and call them from synth.js
-
-    // connect the output of this node to be input into another node
-    connect(destinationNode, outputIndex, inputIndex) {
-        // ouputIndex refers to one of the outputs of this ADSR node.
-        // inputIndex refers to one of the inputs on the destination node.
-        this.releaseNode.connect(destinationNode, inputIndex);
-    }
-
-    disconnect(destinationNode, outputIndex, inputIndex) {
-        this.releaseNode.disconnect(destinationNode, inputIndex);
-    }
-
-    // TODO: Consider making Gate be an a-rate AudioParam?
-
     // ADSR values are essentially locked-in once gateOn is called.
     // That means e.g. you can't change the sustain value of a note that's
     // already playing.  That's not super realistic.
     gateOn(source) {
-        console.log('gateOn', this);
+        console.log('gateOn', this.ctx.currentTime, this.attackTime, this.releaseTime, this.sustainRatio);
 
         clearTimeout(this.disconnectTimeout);
 
-        this.input.connect(this.attackNode);
-        this.releaseNode.connect(this.output);
-
-        // Reset all stages to 1.
-        this.attackNode.gain.cancelScheduledValues(this.ctx.currentTime);
-        this.decayNode.gain.cancelScheduledValues(this.ctx.currentTime);
-        this.releaseNode.gain.cancelScheduledValues(this.ctx.currentTime);
-
-        this.attackNode.gain.setValueAtTime(1, this.ctx.currentTime);
-        this.decayNode.gain.setValueAtTime(1, this.ctx.currentTime);
-        this.releaseNode.gain.setValueAtTime(1, this.ctx.currentTime);
-
-        this.attackNode.gain.setValueAtTime(0.00001, this.ctx.currentTime);
-        if (this.attackTime > this.threshold) {
-            this.attackNode.gain.exponentialRampToValueAtTime(
-                0.9,
-                this.ctx.currentTime + this.threshold + this.attackTime
-            );
-        } else {
-            this.attackNode.gain.exponentialRampToValueAtTime(
-                0.9,
-                this.ctx.currentTime + this.threshold
-            );
-        }
-
-        this.decayNode.gain.setValueAtTime(1, this.ctx.currentTime + this.attackTime);
-        this.decayNode.gain.exponentialRampToValueAtTime(
-            this.sustain / 100,
-            this.ctx.currentTime + this.attackTime + this.decayTime
-        );
+        this.input.connect(this);
+        this.connect(this.output);
+        startADSR(this.gain, this.attackTime, this.decayTime, this.sustainRatio, this.ctx.currentTime);
         this.on = true;
     }
 
     gateOff() {
-        console.log('gateOff');
-        this.releaseNode.gain.setValueAtTime(0.9, this.ctx.currentTime);
-        this.releaseNode.gain.exponentialRampToValueAtTime(
-            0.00001,
-            this.ctx.currentTime + Math.max(this.releaseTime, this.threshold)
-        );
-
-        clearTimeout(this.disconnectTimeout);
+        console.log('gateOff', this.ctx.currentTime);
+        stopADSR(this.gain, this.sustainRatio, this.releaseTime, this.ctx.currentTime);
         this.disconnectTimeout = setTimeout(() => {
-            console.log('disconnecting');
+            console.log('disconnect');
             if (this.on) {
-                this.input.disconnect(this.attackNode);
-                this.releaseNode.disconnect(this.output);
+                this.input.disconnect(this);
+                this.disconnect(this.output);
                 this.on = false;
             }
         }, Math.max(this.releaseTime, this.threshold) * 1000);
-
     }
 }
 
 const THRESHOLD = 0.001;
 
 function startADSR(aRateValue, attackTime, decayTime, sustainRatio, currentTime) {
-    aRateValue.cancelScheduledValues();
-    aRateValue.setValueAtTime(0, currentTime);
-    aRateValue.exponentialRampToValueAtTime(1, currentTime + attackTime + THRESHOLD);
-    aRateValue.exponentialRampToValueAtTime(sustainRatio, currentTime + attackTime + decayTime + THRESHOLD);
+    aRateValue.cancelScheduledValues(currentTime);
+    aRateValue.setValueAtTime(0.001, currentTime);
+    aRateValue.exponentialRampToValueAtTime(1, currentTime + attackTime);
+    console.log('ramping to', Math.max(sustainRatio, THRESHOLD), currentTime + attackTime + decayTime);
+    aRateValue.exponentialRampToValueAtTime(Math.max(sustainRatio, THRESHOLD), currentTime + attackTime + decayTime);
 }
 
-function stopADSR(aRateValue, releaseTime, currentTime) {
-    aRateValue.cancelScheduledValues();
-    aRateValue.exponentialRampToValueAtTime(0, currentTime + releaseTime + THRESHOLD)
+function stopADSR(aRateValue, sustainRatio, releaseTime, currentTime) {
+    console.log('release time', currentTime, releaseTime);
+    aRateValue.cancelScheduledValues(currentTime);
+    aRateValue.setValueAtTime(sustainRatio, currentTime);
+    aRateValue.exponentialRampToValueAtTime(0.00001, currentTime + Math.max(THRESHOLD, releaseTime));
 }
 
 class ADSRBiquadFilter extends BiquadFilterNode {
-    constructor() {
+    constructor(ctx, a, d, s, r, input, output) {
+        super(ctx);
+        // TODO: Replace these Number values with AudioParams.
+        this.attackTime = a;
+        this.decayTime = d;
+        this.sustainRatio = s;
+        this.releaseTime = r;
 
+        this.threshold = 0.001;
+
+        this.ctx = ctx;
+        // Input is e.g. an OscillatorNode.
+        // Output is e.g. the AudioContext.destination
+        this.input = input;
+        this.output = output;
     }
 }
-
-// New idea:
-// Make ADSR with nothing but a reference to an a-rate AudioParam.
-// Rather than chaining multiple GainNodes together, just time
-// the updates to a single GainNode's gain AudioParam.

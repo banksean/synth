@@ -43,7 +43,7 @@ class GainEGControl extends LitElement {
 
             <div class="range">
                 <label for="decay">Sustain</label>
-                <input name="sustain" id="sustain" type="range" data-control-name="sustain" min="0" max="100" value="50" />
+                <input name="sustain" id="sustain" type="range" data-control-name="sustain" min="0" max="1" value="0.5" step="any"/>
             </div>
 
             <div class="range">
@@ -64,14 +64,14 @@ class GainEGControl extends LitElement {
 
     applyOptions() {
         const data = Object.fromEntries(new FormData(this.controls));
-        this.attack = parseInt(data.attack) / 1000 + 0.01;
-        this.decay = parseInt(data.decay) / 1000 + 0.001;
-        this.sustain = parseInt(data.sustain) + 0.001;
-        this.release = parseInt(data.release) / 1000 + 0.1;
+        this.attack = Math.max(parseInt(data.attack) / 1000, 0.01);
+        this.decay = Math.max(parseInt(data.decay) / 1000, 0.01);
+        this.sustain = Math.max(parseFloat(data.sustain), 0.01);
+        this.release = Math.max(parseInt(data.release) / 1000, 0.01);
         if (this.audioNode) { // Yuck.
             this.audioNode.attackTime = this.attack;
             this.audioNode.decayTime = this.decay;
-            this.audioNode.sustain = this.sustain;
+            this.audioNode.sustainRatio = this.sustain;
             this.audioNode.releaseTime = this.release;
         }
 

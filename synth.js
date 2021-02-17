@@ -102,7 +102,7 @@ class Synth {
         // Crazy idea: dynamically add/remove oscopes for each note being played.
         let oscopes = document.querySelectorAll('oscope-control');
         for (let i = 0; i < oscopes.length; i++) {
-            oscopes[i].setupAudioNodes(this.ctx, this.gainEG.audioNode.releaseNode);
+            oscopes[i].setupAudioNodes(this.ctx, this.gainEG.audioNode);
         }
     }
 
