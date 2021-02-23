@@ -12,7 +12,7 @@
 // ADSR take a couple of factory methods:
 //   createEnvelopedNode();
 //   getEnvelopedParam()
-export default class ADSRGain extends GainNode {
+export class ADSRGain extends GainNode {
     constructor(ctx, a, d, s, r, input, output) {
         super(ctx);
         // TODO: Replace these Number values with AudioParams.
@@ -75,7 +75,7 @@ function stopADSR(aRateValue, sustainRatio, releaseTime, currentTime) {
     aRateValue.exponentialRampToValueAtTime(0.00001, currentTime + Math.max(THRESHOLD, releaseTime));
 }
 
-class ADSRBiquadFilter extends BiquadFilterNode {
+export class ADSRBiquadFilter extends BiquadFilterNode {
     constructor(ctx, a, d, s, r, input, output) {
         super(ctx);
         // TODO: Replace these Number values with AudioParams.
@@ -92,4 +92,29 @@ class ADSRBiquadFilter extends BiquadFilterNode {
         this.input = input;
         this.output = output;
     }
+
+    gateOn(source) {
+        console.log('gateOn', this.ctx.currentTime, this.attackTime, this.releaseTime, this.sustainRatio);
+
+        clearTimeout(this.disconnectTimeout);
+
+        this.input.connect(this);
+        this.connect(this.output);
+        startADSR(this.frequency, this.attackTime, this.decayTime, this.sustainRatio, this.ctx.currentTime);
+        this.on = true;
+    }
+
+    gateOff() {
+        console.log('gateOff', this.ctx.currentTime);
+        stopADSR(this.gain, this.sustainRatio, this.releaseTime, this.ctx.currentTime);
+        this.disconnectTimeout = setTimeout(() => {
+            console.log('disconnect');
+            if (this.on) {
+                this.input.disconnect(this);
+                this.disconnect(this.output);
+                this.on = false;
+            }
+        }, Math.max(this.releaseTime, this.threshold) * 1000);
+    }
+
 }

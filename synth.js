@@ -69,7 +69,7 @@ class Synth {
             this.endNote(this.voice);
         });
 
-        this.gainEG = document.querySelector('gain-eg-control');
+        this.gainEG = document.querySelector('eg-control');
         this.tg = document.querySelector('oscillator-control');
         this.filter = document.querySelector('filter-control');
 
@@ -81,6 +81,8 @@ class Synth {
         this.buildAudioNodeGraph();
     }
 
+    // Really need to straighten this graph construction bit out before adding
+    // much more complexity to this example.
     buildAudioNodeGraph() {
         this.ctx = new window.AudioContext();
 
@@ -90,7 +92,10 @@ class Synth {
         this.filter.setupAudioNodes(this.ctx);
         this.tg.audioNode.connect(this.filter.audioNode);
         //this.filter.audioNode.connect(this.gainEG.audioNode);
+        //this.filterEG.setupAudioNodes(this.ctx, this.filter.audioNode, this.ctx.destination); //this.gainEG.audioNode);
         this.gainEG.setupAudioNodes(this.ctx, this.filter.audioNode, this.ctx.destination);
+        // tg -> filter -> filterEG -> gainEG
+
         // Do something about 'voices' plural:
         this.voice = {
             ctx: this.ctx,

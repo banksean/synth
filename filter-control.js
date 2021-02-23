@@ -4,6 +4,7 @@ import {
     css
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
+import './eg-control';
 import './param-slider';
 import styles from './styles';
 
@@ -51,9 +52,10 @@ class FilterControl extends LitElement {
     render() {
         return html `
         <div class="vcf container">
-        VCF
+            Filter
             <param-slider @input=${this._cutChanged} value=${this.cut} name="Cut" min="1" max="10000" step="any"></param-slider>
             <param-slider @input=${this._qChanged} value=${this.q} name="Q" min="0.0" max="100" step="any"></param-slider>
+            <eg-control type="filter"></eg-control>
         </div>
         `;
     }

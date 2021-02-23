@@ -4,10 +4,10 @@ import {
     css
 } from "https://unpkg.com/lit-element/lit-element.js?module";
 
-import ADSRGain from './adsr';
+import { ADSRGain, ADSRBiquadFilter } from './adsr';
 import styles from './styles';
 
-class GainEGControl extends LitElement {
+class EGControl extends LitElement {
     constructor() {
         super();
     }
@@ -18,6 +18,7 @@ class GainEGControl extends LitElement {
 
     static get properties() {
         return {
+            type: { type: String },
             audioNode: { type: ADSRGain },
             attack: { type: Number },
             decay: { type: Number },
@@ -30,7 +31,7 @@ class GainEGControl extends LitElement {
         return html `
         <form class="controls">
         <div class="controls-box container">
-            Gain Envelope
+            Envelope
             <div class="range">
                 <label for="attack">Attack</label>
                 <input name="attack" id="attack" type="range" data-control-name="attack" min="0" max="1000" value="0" />
@@ -74,17 +75,19 @@ class GainEGControl extends LitElement {
             this.audioNode.sustainRatio = this.sustain;
             this.audioNode.releaseTime = this.release;
         }
-
     }
 
     setupAudioNodes(ctx, input, output) {
         this.applyOptions();
-        this.audioNode = new ADSRGain(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
+        if (this.type == "filter") {
+            this.audioNode = new ADSRBiquadFilter(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
+        } else {
+            this.audioNode = new ADSRGain(ctx, this.attack, this.decay, this.sustain, this.release, input, output);
+        }
         // In a gateOn event, ADSRGain will effectively call
         // this.audioNode.input.connect(this.audioNode.attackNode);
         // this.audioNode.releaseNode.connect(this.audioNode.output);
-
     }
 };
 
-customElements.define('gain-eg-control', GainEGControl);
+customElements.define('eg-control', EGControl);
